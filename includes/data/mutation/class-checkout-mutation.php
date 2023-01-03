@@ -9,6 +9,8 @@
 namespace WPGraphQL\WooCommerce\Data\Mutation;
 
 use GraphQL\Error\UserError;
+use WP_Error;
+
 use function WC;
 
 /**
@@ -70,14 +72,14 @@ class Checkout_Mutation {
 	 * @return array
 	 */
 	public static function prepare_checkout_args( $input, $context, $info ) {
-		$data    = array(
+		$data    = [
 			'terms'                     => (int) isset( $input['terms'] ),
 			'createaccount'             => (int) ! empty( $input['account'] ),
 			'payment_method'            => isset( $input['paymentMethod'] ) ? $input['paymentMethod'] : '',
 			'shipping_method'           => isset( $input['shippingMethod'] ) ? $input['shippingMethod'] : '',
 			'ship_to_different_address' => ! empty( $input['shipToDifferentAddress'] ) && ! wc_ship_to_billing_address_only(),
-		);
-		$skipped = array();
+		];
+		$skipped = [];
 
 		foreach ( self::get_checkout_fields() as $fieldset_key => $fieldset ) {
 			if ( self::maybe_skip_fieldset( $fieldset_key, $data ) ) {
@@ -99,7 +101,7 @@ class Checkout_Mutation {
 					$data[ $key ] = self::get_value( $key );
 				}
 			}
-		}
+		}//end foreach
 
 		if ( in_array( 'shipping', $skipped, true ) && ( \WC()->cart->needs_shipping_address() || \wc_ship_to_billing_address_only() ) ) {
 			foreach ( self::get_checkout_fields( 'shipping' ) as $field => $input_key ) {
@@ -120,8 +122,8 @@ class Checkout_Mutation {
 	 * @return bool|array
 	 */
 	public static function get_checkout_fields( $fieldset = '', $prefixed = false ) {
-		$fields = array(
-			'billing'  => array(
+		$fields = [
+			'billing'  => [
 				'first_name' => 'firstName',
 				'last_name'  => 'lastName',
 				'company'    => 'company',
@@ -133,8 +135,8 @@ class Checkout_Mutation {
 				'country'    => 'country',
 				'phone'      => 'phone',
 				'email'      => 'email',
-			),
-			'shipping' => array(
+			],
+			'shipping' => [
 				'first_name' => 'firstName',
 				'last_name'  => 'lastName',
 				'company'    => 'company',
@@ -144,15 +146,15 @@ class Checkout_Mutation {
 				'postcode'   => 'postcode',
 				'state'      => 'state',
 				'country'    => 'country',
-			),
-			'account'  => array(
+			],
+			'account'  => [
 				'username' => 'username',
 				'password' => 'password',
-			),
-			'order'    => array(
+			],
+			'order'    => [
 				'comments' => 'customerNote',
-			),
-		);
+			],
+		];
 
 		if ( $prefixed ) {
 			foreach ( $fields as $prefix => $values ) {
@@ -176,7 +178,7 @@ class Checkout_Mutation {
 	 */
 	protected static function update_session( $data ) {
 		// Update both shipping and billing to the passed billing address first if set.
-		$address_fields = array(
+		$address_fields = [
 			'first_name',
 			'last_name',
 			'company',
@@ -188,7 +190,7 @@ class Checkout_Mutation {
 			'postcode',
 			'state',
 			'country',
-		);
+		];
 
 		foreach ( $address_fields as $field ) {
 			self::set_customer_address_fields( $field, $data );
@@ -223,7 +225,7 @@ class Checkout_Mutation {
 			return false;
 		}
 
-		$address = array(
+		$address = [
 			'first_name' => '',
 			'last_name'  => '',
 			'company'    => '',
@@ -233,15 +235,15 @@ class Checkout_Mutation {
 			'state'      => '',
 			'postcode'   => '',
 			'country'    => '',
-		);
+		];
 
 		if ( 'billing' === $type ) {
 			$address = array_merge(
 				$address,
-				array(
+				[
 					'email' => '',
 					'phone' => '',
-				)
+				]
 			);
 		}
 
@@ -271,10 +273,10 @@ class Checkout_Mutation {
 				$data['billing_email'],
 				$username,
 				$password,
-				array(
+				[
 					'first_name' => ! empty( $data['billing_first_name'] ) ? $data['billing_first_name'] : '',
 					'last_name'  => ! empty( $data['billing_last_name'] ) ? $data['billing_last_name'] : '',
-				)
+				]
 			);
 
 			if ( is_wp_error( $customer_id ) ) {
@@ -288,7 +290,7 @@ class Checkout_Mutation {
 
 			// Also, recalculate cart totals to reveal any role-based discounts that were unavailable before registering.
 			WC()->cart->calculate_totals();
-		}
+		}//end if
 
 		// On multisite, ensure user exists on current site, if not add them before allowing login.
 		if ( $customer_id && is_multisite() && is_user_logged_in() && ! is_user_member_of_blog() ) {
@@ -315,7 +317,7 @@ class Checkout_Mutation {
 
 			foreach ( $data as $key => $value ) {
 				// Use setters where available.
-				if ( is_callable( array( $customer, "set_{$key}" ) ) ) {
+				if ( is_callable( [ $customer, "set_{$key}" ] ) ) {
 					$customer->{"set_{$key}"}( $value );
 
 					// Store custom fields prefixed with wither shipping_ or billing_.
@@ -329,7 +331,7 @@ class Checkout_Mutation {
 			do_action( 'woocommerce_checkout_update_customer', $customer, $data );
 
 			$customer->save();
-		}
+		}//end if
 
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		do_action( 'woocommerce_checkout_update_user_meta', $customer_id, $data );
@@ -345,20 +347,20 @@ class Checkout_Mutation {
 		$billing_value  = null;
 		$shipping_value = null;
 
-		if ( isset( $data[ "billing_{$field}" ] ) && is_callable( array( WC()->customer, "set_billing_{$field}" ) ) ) {
+		if ( isset( $data[ "billing_{$field}" ] ) && is_callable( [ WC()->customer, "set_billing_{$field}" ] ) ) {
 			$billing_value  = $data[ "billing_{$field}" ];
 			$shipping_value = $data[ "billing_{$field}" ];
 		}
 
-		if ( isset( $data[ "shipping_{$field}" ] ) && is_callable( array( WC()->customer, "set_shipping_{$field}" ) ) ) {
+		if ( isset( $data[ "shipping_{$field}" ] ) && is_callable( [ WC()->customer, "set_shipping_{$field}" ] ) ) {
 			$shipping_value = $data[ "shipping_{$field}" ];
 		}
 
-		if ( ! is_null( $billing_value ) && is_callable( array( WC()->customer, "set_billing_{$field}" ) ) ) {
+		if ( ! is_null( $billing_value ) && is_callable( [ WC()->customer, "set_billing_{$field}" ] ) ) {
 			WC()->customer->{"set_billing_{$field}"}( $billing_value );
 		}
 
-		if ( ! is_null( $shipping_value ) && is_callable( array( WC()->customer, "set_shipping_{$field}" ) ) ) {
+		if ( ! is_null( $shipping_value ) && is_callable( [ WC()->customer, "set_shipping_{$field}" ] ) ) {
 			WC()->customer->{"set_shipping_{$field}"}( $shipping_value );
 		}
 	}
@@ -437,8 +439,8 @@ class Checkout_Mutation {
 						}
 					}
 				}
-			}
-		}
+			}//end foreach
+		}//end foreach
 	}
 
 	/**
@@ -483,7 +485,7 @@ class Checkout_Mutation {
 					}
 				}
 			}
-		}
+		}//end if
 
 		if ( WC()->cart->needs_payment() ) {
 			$available_gateways = WC()->payment_gateways->get_available_payment_gateways();
@@ -496,7 +498,7 @@ class Checkout_Mutation {
 		}
 
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
-		do_action( 'woocommerce_after_checkout_validation', $data );
+		do_action( 'woocommerce_after_checkout_validation', $data, new WP_Error() );
 	}
 
 	/**
@@ -507,7 +509,7 @@ class Checkout_Mutation {
 	 *
 	 * @return array.
 	 */
-	protected function process_order_payment( $order_id, $payment_method ) {
+	protected static function process_order_payment( $order_id, $payment_method ) {
 		$available_gateways = WC()->payment_gateways->get_available_payment_gateways();
 
 		if ( ! isset( $available_gateways[ $payment_method ] ) ) {
@@ -519,7 +521,7 @@ class Checkout_Mutation {
 
 		$process_payment_args = apply_filters(
 			"graphql_{$payment_method}_process_payment_args",
-			array( $order_id ),
+			[ $order_id ],
 			$payment_method
 		);
 
@@ -536,16 +538,16 @@ class Checkout_Mutation {
 	 *
 	 * @return array
 	 */
-	protected function process_order_without_payment( $order_id, $transaction_id = '' ) {
+	protected static function process_order_without_payment( $order_id, $transaction_id = '' ) {
 		$order = wc_get_order( $order_id );
 		$order->payment_complete( $transaction_id );
-		wc_empty_cart();
+		wc_empty_cart(); // Custom woo-graphql code
 
-		return array(
+		return [
 			'result'   => 'success',
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 			'redirect' => apply_filters( 'woocommerce_checkout_no_payment_needed_redirect', $order->get_checkout_order_received_url(), $order ),
-		);
+		];
 	}
 
 	/**
@@ -566,7 +568,7 @@ class Checkout_Mutation {
 		do_action( 'woocommerce_before_checkout_process' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 
 		if ( WC()->cart->is_empty() ) {
-			throw new UserError( __( 'Your cart is currently empty.', 'wp-graphql-woocommerce' ) );
+			throw new UserError( __( 'Your cart is currently empty.', 'wp-graphql-woocommerce' ) ); // Custom woo-graphql code
 		}
 
 		do_action( 'woocommerce_checkout_process', $data, $context, $info ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
@@ -636,7 +638,7 @@ class Checkout_Mutation {
 			if ( $valid ) {
 				$results = self::process_order_without_payment( $order_id, $transaction_id );
 			} else {
-				$results = array(
+				$results = [
 					'result'   => 'failed',
 					'redirect' => apply_filters(
 						'graphql_woocommerce_checkout_payment_failed_redirect',
@@ -645,8 +647,12 @@ class Checkout_Mutation {
 						$order_id,
 						$transaction_id
 					),
-				);
+				];
 			}
+		}//end if
+
+		if ( 'success' === $results['result'] ) {
+			wc_empty_cart();
 		}
 
 		return $order_id;
@@ -684,7 +690,7 @@ class Checkout_Mutation {
 			$customer_object = WC()->customer;
 		}
 
-		if ( is_callable( array( $customer_object, "get_$input" ) ) ) {
+		if ( is_callable( [ $customer_object, "get_$input" ] ) ) {
 			$value = $customer_object->{"get_$input"}();
 		} elseif ( $customer_object->meta_exists( $input ) ) {
 			$value = $customer_object->get_meta( $input, true );

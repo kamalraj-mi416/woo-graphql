@@ -3,7 +3,7 @@
  * Plugin Name: WPGraphQL WooCommerce (WooGraphQL)
  * Plugin URI: https://github.com/wp-graphql/wp-graphql-woocommerce
  * Description: Adds Woocommerce Functionality to WPGraphQL schema.
- * Version: 0.10.3
+ * Version: 0.12.0
  * Author: kidunot89
  * Author URI: https://axistaylor.com
  * Text Domain: wp-graphql-woocommerce
@@ -11,14 +11,16 @@
  * License: GPL-3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * WC requires at least: 4.8.0
- * WC tested up to: 5.3.0
- * WPGraphQL requires at least: 1.3.9+
- * WPGraphQL-JWT-Authentication requires at least: 0.4.0+
+ * WC tested up to: 6.6.1
+ * WPGraphQL requires at least: 1.6.1+
+ * WPGraphQL-JWT-Authentication requires at least: 0.5.0+
  *
  * @package     WPGraphQL\WooCommerce
  * @author      kidunot89
  * @license     GPL-3
  */
+
+namespace WPGraphQL\WooCommerce;
 
 // Exit if accessed directly.
 defined( 'ABSPATH' ) || exit;
@@ -26,10 +28,10 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Setups WPGraphQL WooCommerce constants
  */
-function woographql_constants() {
+function constants() {
 	// Plugin version.
 	if ( ! defined( 'WPGRAPHQL_WOOCOMMERCE_VERSION' ) ) {
-		define( 'WPGRAPHQL_WOOCOMMERCE_VERSION', '0.10.3' );
+		define( 'WPGRAPHQL_WOOCOMMERCE_VERSION', '0.11.2' );
 	}
 	// Plugin Folder Path.
 	if ( ! defined( 'WPGRAPHQL_WOOCOMMERCE_PLUGIN_DIR' ) ) {
@@ -50,10 +52,51 @@ function woographql_constants() {
 }
 
 /**
- * Checks if WPGraphQL WooCommerce required plugins are installed and activated
+ * Returns path to plugin root directory.
+ *
+ * @return string
  */
-function woographql_dependencies_not_ready() {
-	$deps = array();
+function get_plugin_directory() {
+	return trailingslashit( WPGRAPHQL_WOOCOMMERCE_PLUGIN_DIR );
+}
+
+/**
+ * Returns path to plugin "includes" directory.
+ *
+ * @return string
+ */
+function get_includes_directory() {
+	return trailingslashit( WPGRAPHQL_WOOCOMMERCE_PLUGIN_DIR ) . 'includes/';
+}
+
+/**
+ * Returns path to plugin "vendor" directory.
+ *
+ * @return string
+ */
+function get_vendor_directory() {
+	return trailingslashit( WPGRAPHQL_WOOCOMMERCE_PLUGIN_DIR ) . 'vendor/';
+}
+
+/**
+ * Returns url to a plugin file.
+ *
+ * @param string $filepath  Relative path to plugin file.
+ *
+ * @return string
+ */
+function plugin_file_url( $filepath ) {
+	return plugins_url( $filepath, __FILE__ );
+}
+
+/**
+ * Checks if WPGraphQL WooCommerce required plugins are installed and activated
+ *
+ * @param array $deps  Unloaded dependencies list.
+ *
+ * @return bool
+ */
+function dependencies_not_ready( &$deps = [] ) {
 	if ( ! class_exists( '\WPGraphQL' ) ) {
 		$deps[] = 'WPGraphQL';
 	}
@@ -67,12 +110,9 @@ function woographql_dependencies_not_ready() {
 /**
  * Initializes WPGraphQL WooCommerce
  */
-function woographql_init() {
-	woographql_constants();
-
-	$not_ready = woographql_dependencies_not_ready();
-	if ( empty( $not_ready ) ) {
-		require_once WPGRAPHQL_WOOCOMMERCE_PLUGIN_DIR . 'includes/class-wp-graphql-woocommerce.php';
+function init() {
+	if ( empty( dependencies_not_ready( $not_ready ) ) ) {
+		require_once get_includes_directory() . 'class-wp-graphql-woocommerce.php';
 		return WP_GraphQL_WooCommerce::instance();
 	}
 
@@ -96,7 +136,11 @@ function woographql_init() {
 			}
 		);
 	}
-
-	return false;
 }
-add_action( 'graphql_init', 'woographql_init' );
+add_action( 'graphql_init', 'WPGraphQL\WooCommerce\init' );
+
+// Load constants.
+constants();
+
+// Load access functions.
+require_once get_plugin_directory() . 'access-functions.php';

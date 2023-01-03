@@ -26,13 +26,13 @@ class Customer extends Model {
 	 */
 	public function __construct( $id = 'session' ) {
 		$this->data                = 'session' === $id ? \WC()->customer : new WC_Customer( $id );
-		$allowed_restricted_fields = array(
+		$allowed_restricted_fields = [
 			'isRestricted',
 			'isPrivate',
 			'isPublic',
 			'id',
 			'customerId',
-		);
+		];
 
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
 		$restricted_cap = apply_filters( 'customer_restricted_cap', 'session' === $id ? '' : 'list_users' );
@@ -56,7 +56,7 @@ class Customer extends Model {
 	 */
 	protected function init() {
 		if ( empty( $this->fields ) ) {
-			$this->fields = array(
+			$this->fields = [
 				'ID'                    => function() {
 					return ( ! empty( $this->data->get_id() ) ) ? $this->data->get_id() : \WC()->session->_customer_id;
 				},
@@ -99,13 +99,14 @@ class Customer extends Model {
 					return ( ! empty( $this->data->get_display_name() ) ) ? $this->data->get_display_name() : null;
 				},
 				'role'                  => function() {
-                    if( is_user_logged_in() ) {
+					// Custom woo-graphql code
+					if( is_user_logged_in() ) {
                         $user = wp_get_current_user();
                         $roles = ( array ) $user->roles;
                         $role = end($roles);
                         return ( ! empty( $role ) ) ? $role : null;
                     }else{ return null;}
-					//return ( ! empty( $this->data->get_role() ) ) ? $this->data->get_role() : null;
+					// return ( ! empty( $this->data->get_role() ) ) ? $this->data->get_role() : null;
 				},
 				'date'                  => function() {
 					return ( ! empty( $this->data->get_date_created() ) ) ? $this->data->get_date_created() : null;
@@ -131,8 +132,8 @@ class Customer extends Model {
 				'last_order_id'         => function() {
 					return ( ! empty( $this->data->get_last_order() ) ) ? $this->data->get_last_order()->get_id() : null;
 				},
-			);
-		}
+			];
+		}//end if
 
 		parent::prepare_fields();
 	}

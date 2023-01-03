@@ -8,6 +8,7 @@
 
 namespace WPGraphQL\WooCommerce;
 
+use GraphQL\Error\UserError;
 use WPGraphQL\WooCommerce\Data\Loader\WC_Customer_Loader;
 use WPGraphQL\WooCommerce\Data\Loader\WC_CPT_Loader;
 use WPGraphQL\WooCommerce\Data\Loader\WC_Db_Loader;
@@ -22,25 +23,25 @@ class Core_Schema_Filters {
 	 */
 	public static function add_filters() {
 		// Registers WooCommerce CPTs.
-		add_filter( 'register_post_type_args', array( __CLASS__, 'register_post_types' ), 10, 2 );
-		add_filter( 'graphql_post_entities_allowed_post_types', array( __CLASS__, 'skip_type_registry' ), 10 );
+		add_filter( 'register_post_type_args', [ __CLASS__, 'register_post_types' ], 10, 2 );
+		add_filter( 'graphql_post_entities_allowed_post_types', [ __CLASS__, 'skip_type_registry' ], 10 );
 
 		// Registers WooCommerce taxonomies.
-		add_filter( 'register_taxonomy_args', array( __CLASS__, 'register_taxonomy_args' ), 10, 2 );
+		add_filter( 'register_taxonomy_args', [ __CLASS__, 'register_taxonomy_args' ], 10, 2 );
 
 		// Add data-loaders to AppContext.
-		add_filter( 'graphql_data_loaders', array( __CLASS__, 'graphql_data_loaders' ), 10, 2 );
+		add_filter( 'graphql_data_loaders', [ __CLASS__, 'graphql_data_loaders' ], 10, 2 );
 
 		// Add node resolvers.
 		add_filter(
 			'graphql_resolve_node',
-			array( '\WPGraphQL\WooCommerce\Data\Factory', 'resolve_node' ),
+			[ '\WPGraphQL\WooCommerce\Data\Factory', 'resolve_node' ],
 			10,
 			4
 		);
 		add_filter(
 			'graphql_resolve_node_type',
-			array( '\WPGraphQL\WooCommerce\Data\Factory', 'resolve_node_type' ),
+			[ '\WPGraphQL\WooCommerce\Data\Factory', 'resolve_node_type' ],
 			10,
 			2
 		);
@@ -48,86 +49,88 @@ class Core_Schema_Filters {
 		// Filter Unions.
 		add_filter(
 			'graphql_wp_union_type_config',
-			array( __CLASS__, 'inject_union_types' ),
+			[ __CLASS__, 'inject_union_types' ],
 			10,
 			2
 		);
 
 		add_filter(
 			'graphql_union_resolve_type',
-			array( __CLASS__, 'inject_type_resolver' ),
+			[ __CLASS__, 'inject_type_resolver' ],
 			10,
 			3
 		);
 
 		add_filter(
 			'graphql_interface_resolve_type',
-			array( __CLASS__, 'inject_type_resolver' ),
+			[ __CLASS__, 'inject_type_resolver' ],
 			10,
 			3
 		);
 
 		add_filter(
 			'graphql_dataloader_pre_get_model',
-			array( '\WPGraphQL\WooCommerce\Data\Loader\WC_CPT_Loader', 'inject_post_loader_models' ),
+			[ '\WPGraphQL\WooCommerce\Data\Loader\WC_CPT_Loader', 'inject_post_loader_models' ],
 			10,
 			3
 		);
 
 		add_filter(
 			'graphql_dataloader_get_model',
-			array( '\WPGraphQL\WooCommerce\Data\Loader\WC_Customer_Loader', 'inject_user_loader_models' ),
+			[ '\WPGraphQL\WooCommerce\Data\Loader\WC_Customer_Loader', 'inject_user_loader_models' ],
 			10,
 			3
 		);
 
 		add_filter(
 			'graphql_post_object_connection_query_args',
-			array( '\WPGraphQL\WooCommerce\Connection\Orders', 'post_object_connection_query_args' ),
+			[ '\WPGraphQL\WooCommerce\Connection\Orders', 'post_object_connection_query_args' ],
 			10,
 			5
 		);
 
-        add_filter(
+		/*  Custom woo-graphql code start */
+		add_filter(
             'graphql_post_object_connection_query_args',
-            array( '\WPGraphQL\WooCommerce\Connection\Subscriptions', 'post_object_connection_query_args' ),
+            [ '\WPGraphQL\WooCommerce\Connection\Subscriptions', 'post_object_connection_query_args' ],
             10,
             5
         );
+		/*  Custom woo-graphql code end */
 
 		add_filter(
 			'graphql_map_input_fields_to_wp_query',
-			array( '\WPGraphQL\WooCommerce\Connection\Coupons', 'map_input_fields_to_wp_query' ),
+			[ '\WPGraphQL\WooCommerce\Connection\Coupons', 'map_input_fields_to_wp_query' ],
 			10,
 			7
 		);
 
 		add_filter(
 			'graphql_map_input_fields_to_wp_query',
-			array( '\WPGraphQL\WooCommerce\Connection\Products', 'map_input_fields_to_wp_query' ),
+			[ '\WPGraphQL\WooCommerce\Connection\Products', 'map_input_fields_to_wp_query' ],
 			10,
 			7
 		);
 
 		add_filter(
 			'graphql_map_input_fields_to_wp_query',
-			array( '\WPGraphQL\WooCommerce\Connection\Orders', 'map_input_fields_to_wp_query' ),
-			10,
-			7
-		);
-
-		add_filter(
-			'graphql_map_input_fields_to_wp_query',
-			array( '\WPGraphQL\WooCommerce\Connection\Subscriptions', 'map_input_fields_to_wp_query' ),
+			[ '\WPGraphQL\WooCommerce\Connection\Orders', 'map_input_fields_to_wp_query' ],
 			10,
 			7
 		);
 
 		add_filter(
 			'graphql_map_input_fields_to_wp_user_query',
-			array( '\WPGraphQL\WooCommerce\Connection\Customers', 'map_input_fields_to_wp_query' ),
+			[ '\WPGraphQL\WooCommerce\Connection\Customers', 'map_input_fields_to_wp_query' ],
 			10,
 			6
+		);
+
+		add_filter(
+			'graphql_connection',
+			[ '\WPGraphQL\WooCommerce\Connection\Customers', 'upgrade_models' ],
+			10,
+			2
 		);
 	}
 
@@ -141,21 +144,39 @@ class Core_Schema_Filters {
 	 */
 	public static function register_post_types( $args, $post_type ) {
 		if ( 'product' === $post_type ) {
-			$args['show_in_graphql']            = true;
-			$args['graphql_single_name']        = 'Product';
-			$args['graphql_plural_name']        = 'Products';
-			$args['skip_graphql_type_registry'] = true;
-		}
+			$args['show_in_graphql']                  = true;
+			$args['graphql_single_name']              = 'Product';
+			$args['graphql_plural_name']              = 'Products';
+			$args['graphql_kind']                     = 'interface';
+			$args['graphql_register_root_field']      = false;
+			$args['graphql_register_root_connection'] = false;
+			$args['graphql_resolve_type']             = static function( $value ) {
+				$type_registry  = \WPGraphQL::get_type_registry();
+				$possible_types = WP_GraphQL_WooCommerce::get_enabled_product_types();
+				if ( isset( $possible_types[ $value->type ] ) ) {
+					return $type_registry->get_type( $possible_types[ $value->type ] );
+				}
+				throw new UserError(
+					sprintf(
+					/* translators: %s: Product type */
+						__( 'The "%s" product type is not supported by the core WPGraphQL WooCommerce (WooGraphQL) schema.', 'wp-graphql-woocommerce' ),
+						$value->type
+					)
+				);
+			};
+		}//end if
 		if ( 'product_variation' === $post_type ) {
 			$args['show_in_graphql']            = true;
 			$args['graphql_single_name']        = 'ProductVariation';
 			$args['graphql_plural_name']        = 'ProductVariations';
+			$args['publicly_queryable']         = true;
 			$args['skip_graphql_type_registry'] = true;
 		}
 		if ( 'shop_coupon' === $post_type ) {
 			$args['show_in_graphql']            = true;
 			$args['graphql_single_name']        = 'Coupon';
 			$args['graphql_plural_name']        = 'Coupons';
+			$args['publicly_queryable']         = true;
 			$args['skip_graphql_type_registry'] = true;
 		}
 		if ( 'shop_order' === $post_type ) {
@@ -171,12 +192,14 @@ class Core_Schema_Filters {
 			$args['skip_graphql_type_registry'] = true;
 		}
 
+		/*  Custom woo-graphql code start */
         if ( 'shop_subscription' === $post_type ) {
             $args['show_in_graphql']            = true;
             $args['graphql_single_name']        = 'Subscription';
             $args['graphql_plural_name']        = 'Subscriptions';
             $args['skip_graphql_type_registry'] = true;
         }
+		/*  Custom woo-graphql code end */
 
 		return $args;
 	}
@@ -192,10 +215,10 @@ class Core_Schema_Filters {
 		return array_diff(
 			$post_types,
 			get_post_types(
-				array(
+				[
 					'show_in_graphql'            => true,
 					'skip_graphql_type_registry' => true,
-				)
+				]
 			)
 		);
 	}
@@ -240,12 +263,12 @@ class Core_Schema_Filters {
 		}
 
 		// Filter product attributes taxonomies.
-		$attributes = \WP_GraphQL_WooCommerce::get_product_attribute_taxonomies();
+		$attributes = WP_GraphQL_WooCommerce::get_product_attribute_taxonomies();
 		if ( in_array( $taxonomy, $attributes, true ) ) {
 			$singular_name               = graphql_format_field_name( $taxonomy );
 			$args['show_in_graphql']     = true;
 			$args['graphql_single_name'] = $singular_name;
-			$args['graphql_plural_name'] = \WooGraphQL_Inflect::pluralize( $singular_name );
+			$args['graphql_plural_name'] = 'all' . ucFirst( $singular_name );
 		}
 
 		return $args;
@@ -299,7 +322,7 @@ class Core_Schema_Filters {
 						return 'Product' !== $type;
 					}
 				),
-				array_values( \WP_GraphQL_WooCommerce::get_enabled_product_types() )
+				array_values( WP_GraphQL_WooCommerce::get_enabled_product_types() )
 			);
 			$refresh_callback    = true;
 		}
@@ -307,9 +330,9 @@ class Core_Schema_Filters {
 		// Update 'types' callback.
 		if ( $refresh_callback ) {
 			$config['types'] = function () use ( $config, $wp_union ) {
-				$prepared_types = array();
+				$prepared_types = [];
 				if ( ! empty( $config['typeNames'] ) && is_array( $config['typeNames'] ) ) {
-					$prepared_types = array();
+					$prepared_types = [];
 					foreach ( $config['typeNames'] as $type_name ) {
 						$prepared_types[] = $wp_union->type_registry->get_type( $type_name );
 					}
@@ -332,7 +355,7 @@ class Core_Schema_Filters {
 		switch ( get_class( $value ) ) {
 			case 'WPGraphQL\WooCommerce\Model\Product':
 			case 'WPGraphQL\WooCommerce\Model\Coupon':
-            case 'WPGraphQL\WooCommerce\Model\Subscription':
+            case 'WPGraphQL\WooCommerce\Model\Subscription': // Custom woo-graphql code
 			case 'WPGraphQL\WooCommerce\Model\Order':
 				$new_type = Factory::resolve_node_type( $type, $value );
 				if ( $new_type ) {
@@ -355,8 +378,8 @@ class Core_Schema_Filters {
 		switch ( $type ) {
 			case 'Product':
 			case 'Coupon':
-			case 'Subscription':
-            case 'Order':
+			case 'Subscription': // Custom woo-graphql code
+			case 'Order':
 				$new_type = Factory::resolve_node_type( $type, $value );
 				if ( $new_type ) {
 					$type = $abstract_type->type_registry->get_type( $new_type );

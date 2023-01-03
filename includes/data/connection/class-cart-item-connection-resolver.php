@@ -46,7 +46,7 @@ class Cart_Item_Connection_Resolver extends AbstractConnectionResolver {
 	 * @return array
 	 */
 	public function get_query_args() {
-		$query_args = array( 'filters' => array() );
+		$query_args = [ 'filters' => [] ];
 		if ( ! empty( $this->args['where'] ) ) {
 			$where_args = $this->args['where'];
 			if ( isset( $where_args['needsShipping'] ) ) {
@@ -86,6 +86,7 @@ class Cart_Item_Connection_Resolver extends AbstractConnectionResolver {
 			}
 		}
 
+		// Custom woo-graphql code start
 		$cursor = $this->get_offset();
 		$first  = ! empty( $this->args['first'] ) ? $this->args['first'] : null;
 		$last   = ! empty( $this->args['last'] ) ? $this->args['last'] : null;
@@ -106,6 +107,7 @@ class Cart_Item_Connection_Resolver extends AbstractConnectionResolver {
 		}
 
 		$cart_items = array_slice( $cart_items, $offset, $this->query_amount + 1 );
+		// Custom woo-graphql code end
 
 		// Cache cart items for later.
 		foreach ( $cart_items as $item ) {
@@ -117,6 +119,16 @@ class Cart_Item_Connection_Resolver extends AbstractConnectionResolver {
 	}
 
 	/**
+	 * {@inheritDoc}
+	 */
+	public function get_ids_from_query() {
+		$ids = ! empty( $this->query ) ? $this->query : [];
+
+		return $ids;
+	}
+
+	// Custom woo-graphql code start
+	/**
 	 * Return an array of items from the query
 	 *
 	 * @return array
@@ -124,6 +136,7 @@ class Cart_Item_Connection_Resolver extends AbstractConnectionResolver {
 	public function get_ids() {
 		return ! empty( $this->query ) ? $this->query : array();
 	}
+	// Custom woo-graphql code end
 
 	/**
 	 * Check if cart item key is valid by confirming the validity of
@@ -148,6 +161,7 @@ class Cart_Item_Connection_Resolver extends AbstractConnectionResolver {
 		return ! empty( $model ) && ! empty( $model['key'] ) && ! empty( $model['product_id'] );
 	}
 
+	// Custom woo-graphql code start
 	/**
 	 * Get_offset
 	 *
@@ -178,4 +192,5 @@ class Cart_Item_Connection_Resolver extends AbstractConnectionResolver {
 		 */
 		return $offset;
 	}
+	// Custom woo-graphql code end
 }

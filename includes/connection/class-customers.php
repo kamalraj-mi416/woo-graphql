@@ -11,7 +11,9 @@ namespace WPGraphQL\WooCommerce\Connection;
 
 use GraphQL\Type\Definition\ResolveInfo;
 use WPGraphQL\AppContext;
+use WPGraphQL\Data\Connection\AbstractConnectionResolver;
 use WPGraphQL\Data\Connection\UserConnectionResolver;
+use WPGraphQL\WooCommerce\Model\Customer;
 
 /**
  * Class - Customers
@@ -23,7 +25,7 @@ class Customers {
 	 */
 	public static function register_connections() {
 		register_graphql_connection(
-			array(
+			[
 				'fromType'       => 'RootQuery',
 				'toType'         => 'Customer',
 				'fromFieldName'  => 'customers',
@@ -32,21 +34,21 @@ class Customers {
 					$resolver = new UserConnectionResolver( $source, $args, $context, $info );
 
 					if ( ! self::should_execute() ) {
-						return array(
-							'nodes' => array(),
-							'edges' => array(),
-						);
+						return [
+							'nodes' => [],
+							'edges' => [],
+						];
 					}
 
 					$resolver->set_query_arg( 'role', 'customer' );
 
 					return $resolver->get_connection();
 				},
-			)
+			]
 		);
 
 		register_graphql_connection(
-			array(
+			[
 				'fromType'       => 'Coupon',
 				'toType'         => 'Customer',
 				'fromFieldName'  => 'usedBy',
@@ -58,12 +60,15 @@ class Customers {
 					$resolver->set_query_arg( 'role', 'customer' );
 
 					if ( ! self::should_execute() ) {
-						return array();
+						return [
+							'nodes' => [],
+							'edges' => [],
+						];
 					}
 
 					return $resolver->get_connection();
 				},
-			)
+			]
 		);
 	}
 
@@ -87,32 +92,32 @@ class Customers {
 	 * @return array
 	 */
 	public static function get_connection_args(): array {
-		return array(
-			'search'  => array(
+		return [
+			'search'  => [
 				'type'        => 'String',
 				'description' => __( 'Limit results to those matching a string.', 'wp-graphql-woocommerce' ),
-			),
-			'exclude' => array(
-				'type'        => array( 'list_of' => 'Int' ),
+			],
+			'exclude' => [
+				'type'        => [ 'list_of' => 'Int' ],
 				'description' => __( 'Ensure result set excludes specific IDs.', 'wp-graphql-woocommerce' ),
-			),
-			'include' => array(
-				'type'        => array( 'list_of' => 'Int' ),
+			],
+			'include' => [
+				'type'        => [ 'list_of' => 'Int' ],
 				'description' => __( 'Limit result set to specific ids.', 'wp-graphql-woocommerce' ),
-			),
-			'email'   => array(
+			],
+			'email'   => [
 				'type'        => 'String',
 				'description' => __( 'Limit result set to resources with a specific email.', 'wp-graphql-woocommerce' ),
-			),
-			'orderby' => array(
+			],
+			'orderby' => [
 				'type'        => 'CustomerConnectionOrderbyEnum',
 				'description' => __( 'Order results by a specific field.', 'wp-graphql-woocommerce' ),
-			),
-			'order'   => array(
+			],
+			'order'   => [
 				'type'        => 'OrderEnum',
 				'description' => __( 'Order of results.', 'wp-graphql-woocommerce' ),
-			),
-		);
+			],
+		];
 	}
 
 	/**
@@ -129,11 +134,11 @@ class Customers {
 	 * @return array Query arguments.
 	 */
 	public static function map_input_fields_to_wp_query( $query_args, $where_args, $source, $args, $context, $info ) {
-		$key_mapping = array(
+		$key_mapping = [
 			'search'  => 'search',
 			'exclude' => 'exclude',
 			'include' => 'include',
-		);
+		];
 
 		foreach ( $key_mapping as $key => $field ) {
 			if ( ! empty( $where_args[ $key ] ) ) {
@@ -144,7 +149,7 @@ class Customers {
 		// Filter by email.
 		if ( ! empty( $where_args['email'] ) ) {
 			$query_args['search']         = $where_args['email'];
-			$query_args['search_columns'] = array( 'user_email' );
+			$query_args['search_columns'] = [ 'user_email' ];
 		}
 
 		/**
@@ -184,5 +189,38 @@ class Customers {
 		);
 
 		return $query_args;
+	}
+
+	/**
+	 * Temporary function until necessary functionality
+	 * has been added to the UserConnectionResolver
+	 *
+	 * @param array                      $connection  Resolved connection.
+	 * @param AbstractConnectionResolver $resolver  Resolver class.
+	 *
+	 * @return array
+	 */
+	public static function upgrade_models( $connection, $resolver ) {
+		if ( 'customers' === $resolver->getInfo()->fieldName ) {
+			$nodes = [];
+			$edges = [];
+			foreach ( $connection['nodes'] as $node ) {
+				// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				$nodes[] = new Customer( $node->databaseId );
+			}
+
+			foreach ( $connection['edges'] as $edge ) {
+				$edges[] = array_merge(
+					$edge,
+					// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+					[ 'node' => new Customer( $edge['node']->databaseId ) ]
+				);
+			}
+
+			$connection['nodes'] = $nodes;
+			$connection['edges'] = $edges;
+		}
+
+		return $connection;
 	}
 }

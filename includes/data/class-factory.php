@@ -16,7 +16,7 @@ use GraphQL\Type\Definition\ResolveInfo;
 use function WC;
 use WPGraphQL\AppContext;
 use WPGraphQL\WooCommerce\Model\Order_Item;
-use WPGraphQL\WooCommerce\Model\Subscription;
+use WPGraphQL\WooCommerce\Model\Subscription; // Custom woo-graphql code
 use WPGraphQL\WooCommerce\Model\Product;
 use WPGraphQL\WooCommerce\Model\Customer;
 use WPGraphQL\WooCommerce\Model\Tax_Rate;
@@ -51,7 +51,7 @@ class Factory {
 		}
 		$customer_id = absint( $id );
 		$loader      = $context->getLoader( 'wc_customer' );
-		$loader->buffer( array( $customer_id ) );
+		$loader->buffer( [ $customer_id ] );
 		return new Deferred(
 			function () use ( $loader, $customer_id ) {
 				return $loader->load( $customer_id );
@@ -73,7 +73,7 @@ class Factory {
 			return null;
 		}
 
-		$context->getLoader( 'wc_post' )->buffer( array( $id ) );
+		$context->getLoader( 'wc_post' )->buffer( [ $id ] );
 		return new Deferred(
 			function () use ( $id, $context ) {
 				return $context->getLoader( 'wc_post' )->load( $id );
@@ -116,7 +116,7 @@ class Factory {
 
 		$id     = absint( $id );
 		$loader = $context->getLoader( 'tax_rate' );
-		$loader->buffer( array( $id ) );
+		$loader->buffer( [ $id ] );
 		return new Deferred(
 			function () use ( $loader, $id ) {
 				return $loader->load( $id );
@@ -170,7 +170,7 @@ class Factory {
 			return null;
 		}
 
-		$context->getLoader( 'cart_item' )->buffer( array( $key ) );
+		$context->getLoader( 'cart_item' )->buffer( [ $key ] );
 		return new Deferred(
 			function () use ( $key, $context ) {
 				return $context->getLoader( 'cart_item' )->load( $key );
@@ -207,7 +207,7 @@ class Factory {
 		}
 		$object_id = absint( $id );
 		$loader    = $context->getLoader( 'downloadable_item' );
-		$loader->buffer( array( $object_id ) );
+		$loader->buffer( [ $object_id ] );
 		return new Deferred(
 			function () use ( $loader, $object_id ) {
 				return $loader->load( $object_id );
@@ -231,8 +231,8 @@ class Factory {
 				$node = self::resolve_customer( $id, $context );
 				break;
 			case 'shop_coupon':
-            case 'shop_order':
-            case 'shop_subscription':
+			case 'shop_order':
+            case 'shop_subscription': // Custom woo-graphql code
 			case 'shop_order_refund':
 			case 'product':
 			case 'product_variation':
@@ -268,7 +268,7 @@ class Factory {
 			case is_a( $node, Order::class ):
 				$type = 'Order';
 				break;
-			case is_a( $node, Subscription::class ):
+			case is_a( $node, Subscription::class ): // Custom woo-graphql code
 				$type = 'Subscription';
 				break;
 			case is_a( $node, Product::class ) && 'simple' === $node->type:
@@ -295,7 +295,7 @@ class Factory {
 			case is_a( $node, Tax_Rate::class ):
 				$type = 'TaxRate';
 				break;
-		}
+		}//end switch
 
 		return $type;
 	}

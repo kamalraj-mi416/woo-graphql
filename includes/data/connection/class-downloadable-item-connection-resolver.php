@@ -47,7 +47,7 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 	 * @return array
 	 */
 	public function get_query_args() {
-		$query_args = array( 'filters' => array() );
+		$query_args = [ 'filters' => [] ];
 		if ( ! empty( $this->args['where'] ) ) {
 			$where_args = $this->args['where'];
 			if ( isset( $where_args['active'] ) ) {
@@ -88,7 +88,7 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 					return $has_downloads_remaining === $downloads_remaining;
 				};
 			}
-		}
+		}//end if
 
 		/**
 		 * Filter the $query_args to allow folks to customize queries programmatically.
@@ -118,7 +118,7 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 		}
 
 		if ( empty( $items ) ) {
-			return array();
+			return [];
 		}
 
 		if ( ! empty( $this->query_args['filters'] ) && is_array( $this->query_args['filters'] ) ) {
@@ -127,6 +127,7 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 			}
 		}
 
+		// Custom woo-graphql code start
 		$cursor = $this->get_offset();
 		$first  = ! empty( $this->args['first'] ) ? $this->args['first'] : null;
 		$last   = ! empty( $this->args['last'] ) ? $this->args['last'] : null;
@@ -147,6 +148,7 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 		}
 
 		$items = array_slice( $items, $offset, $this->query_amount + 1 );
+		// Custom woo-graphql code end
 
 		// Cache items for later.
 		foreach ( $items as $item ) {
@@ -156,6 +158,7 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 		return array_column( $items, 'download_id' );
 	}
 
+	// Custom woo-graphql code start
 	/**
 	 * Return an array of items from the query
 	 *
@@ -163,6 +166,18 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 	 */
 	public function get_ids() {
 		return ! empty( $this->query ) ? $this->query : array();
+	}
+	// Custom woo-graphql code end
+
+	/**
+	 * Return an array of items from the query
+	 *
+	 * @return array
+	 */
+	public function get_ids_from_query() {
+		$ids = ! empty( $this->query ) ? $this->query : [];
+
+		return $ids;
 	}
 
 	/**
@@ -191,6 +206,7 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 	}
 
 
+	// Custom woo-graphql code start
 	/**
 	 * Get_offset
 	 *
@@ -221,4 +237,5 @@ class Downloadable_Item_Connection_Resolver extends AbstractConnectionResolver {
 		 */
 		return $offset;
 	}
+	// Custom woo-graphql code end
 }

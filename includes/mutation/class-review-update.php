@@ -28,11 +28,11 @@ class Review_Update {
 	public static function register_mutation() {
 		register_graphql_mutation(
 			'updateReview',
-			array(
+			[
 				'inputFields'         => self::get_input_fields(),
 				'outputFields'        => self::get_output_fields(),
 				'mutateAndGetPayload' => self::mutate_and_get_payload(),
-			)
+			]
 		);
 	}
 
@@ -44,12 +44,12 @@ class Review_Update {
 	public static function get_input_fields() {
 		return array_merge(
 			Review_Write::get_input_fields(),
-			array(
-				'id' => array(
-					'type'        => array( 'non_null' => 'ID' ),
+			[
+				'id' => [
+					'type'        => [ 'non_null' => 'ID' ],
 					'description' => __( 'The ID of the review being updated.', 'wp-graphql-woocommerce' ),
-				),
-			)
+				],
+			]
 		);
 	}
 
@@ -72,17 +72,36 @@ class Review_Update {
 			// Set comment type to "review".
 			$input['type'] = 'review';
 
-			$resolver = CommentUpdate::mutate_and_get_payload();
+			$skip = [
+				'type'             => 'review',
+				'id'               => 1,
+				'rating'           => 1,
+				'clientMutationId' => 1,
+			];
 
-			$payload = $resolver( $input, $context, $info );
+			$payload       = [];
+			$id_parts      = ! empty( $input['id'] ) ? Relay::fromGlobalId( $input['id'] ) : null;
+			$payload['id'] = isset( $id_parts['id'] ) && absint( $id_parts['id'] ) ? absint( $id_parts['id'] ) : null;
+
+			if ( empty( $payload['id'] ) ) {
+				throw new UserError( __( 'The Review could not be updated', 'wp-graphql-woocommerce' ) );
+			}
+
+			if ( array_intersect_key( $input, $skip ) !== $input ) {
+				$resolver = CommentUpdate::mutate_and_get_payload();
+
+				$payload = $resolver( $input, $context, $info );
+			}
 
 			// Check if product rating needs updating.
 			if ( ! empty( $payload['id'] ) && isset( $input['rating'] ) ) {
+				// Custom woo-graphql code start
 				$success = update_comment_meta( $payload['id'], 'rating', $input['rating'] );
 
 				if ( ! $success ) {
 					throw UserError( __( 'Failed to update review rating', 'wp-graphql-woocommerce' ) );
 				}
+				// Custom woo-graphql code end
 			}
 
 			return $payload;

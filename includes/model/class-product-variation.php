@@ -36,7 +36,7 @@ class Product_Variation extends WC_Post {
 		if ( empty( $this->fields ) ) {
 			parent::init();
 
-			$fields = array(
+			$fields = [
 				'id'                => function() {
 					return ! empty( $this->wc_data->get_id() ) ? Relay::toGlobalId( 'product_variation', $this->wc_data->get_id() ) : null;
 				},
@@ -148,43 +148,16 @@ class Product_Variation extends WC_Post {
 				'type'              => function() {
 					return ! empty( $this->wc_data->get_type() ) ? $this->wc_data->get_type() : null;
 				},
+				'priceRaw'          => function() {
+					return ! empty( $this->wc_data->get_price() ) ? $this->wc_data->get_price() : null;
+				},
+				'regularPriceRaw'   => function() {
+					return ! empty( $this->wc_data->get_regular_price() ) ? $this->wc_data->get_regular_price() : null;
+				},
 
-                /**
-                 * Editor/Shop Manager only fields
-                 *
-                                 
-                'priceRaw'          => array(
-                    'callback'   => function() {
-                        return ! empty( $this->wc_data->get_price() ) ? $this->wc_data->get_price() : null;
-                    },
-                    'capability' => $this->post_type_object->cap->edit_posts,
-                ),
-                'regularPriceRaw'   => array(
-                    'callback'   => function() {
-                        return ! empty( $this->wc_data->get_regular_price() ) ? $this->wc_data->get_regular_price() : null;
-                    },
-                    'capability' => $this->post_type_object->cap->edit_posts,
-                ),
-                'salePriceRaw'      => array(
-                    'callback'   => function() {
-                        return ! empty( $this->wc_data->get_sale_price() ) ? $this->wc_data->get_sale_price() : null;
-                    },
-                    'capability' => $this->post_type_object->cap->edit_posts,
-                ),
-                 *
-                 */
-
-                'priceRaw'          =>  function() {
-                    return ! empty( $this->wc_data->get_price() ) ? $this->wc_data->get_price() : null;
-                },
-
-                'regularPriceRaw'   => function() {
-                    return ! empty( $this->wc_data->get_regular_price() ) ? $this->wc_data->get_regular_price() : null;
-                },
-
-                'salePriceRaw'      => function() {
-                    return ! empty( $this->wc_data->get_sale_price() ) ? $this->wc_data->get_sale_price() : null;
-                },
+				'salePriceRaw'      => function() {
+					return ! empty( $this->wc_data->get_sale_price() ) ? $this->wc_data->get_sale_price() : null;
+				},
 
 				/**
 				 * Connection resolvers fields
@@ -207,9 +180,9 @@ class Product_Variation extends WC_Post {
 				'attributes'        => function() {
 					return ! empty( $this->wc_data->get_attributes() ) ? $this->wc_data->get_attributes() : null;
 				},
-			);
+			];
 
 			$this->fields = array_merge( $this->fields, $fields );
-		}
+		}//end if
 	}
 }
